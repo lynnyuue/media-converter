@@ -24,7 +24,7 @@ public class Main {
 
     public static void main(String[] args) throws URISyntaxException, IOException {
         Path basePath = getBasePath();
-        System.out.println(basePath);
+
         CommandLineParser parser = new DefaultParser();
         Options options = getOptions();
 
@@ -66,14 +66,11 @@ public class Main {
         if (sourceFile.isFile()) {
             encode(sourceFile, targetFile, attributes, listener);
         } else if (sourceFile.isDirectory()) {
-            final String outputFormat = format;
             Files.createDirectories(targetFile.toPath());
             Files.list(sourceFile.toPath()).forEachOrdered(input -> {
-                String outputName = getNameWithoutExt(input.getFileName().toString()) + outputFormat;
-
-                File outputFile = targetFile.toPath().resolve(outputName).toFile();
-
-                encode(input.toFile(), outputFile, attributes, listener);
+                if(Files.isRegularFile(input)){
+                    encode(input.toFile(), targetFile, attributes, listener);
+                }
             });
         } else {
             System.err.println("Invalid source file: " + sourceFile);
@@ -82,6 +79,12 @@ public class Main {
 
     private static void encode(File sourceFile, File outputFile, EncodingAttributes attributes,
                                EncoderProgressListener listener) {
+        if(outputFile.isDirectory()){
+            String format = attributes.getFormat();
+            String outputName = getNameWithoutExt(sourceFile.getName()) + format;
+            outputFile = outputFile.toPath().resolve(outputName).toFile();
+        }
+
         Encoder encoder = new Encoder();
         try {
             encoder.encode(new MultimediaObject(sourceFile), outputFile, attributes, listener);
